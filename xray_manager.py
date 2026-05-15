@@ -7,7 +7,7 @@ from pathlib import Path
 import database as db
 
 CONFIG_PATH = Path("/etc/xray/g2ray.json")
-XRAY_BIN = "/usr/local/bin/xray"
+XRAY_BIN = "/tmp/xray"
 GEOIP_PATH = Path("/usr/local/bin/geoip.dat")
 GEOSITE_PATH = Path("/usr/local/bin/geosite.dat")
 
@@ -80,7 +80,6 @@ def _build_routing_rules():
             "domain": ["geosite:category-ads-all"],
             "outboundTag": "block"
         })
-    # Add domain blacklist from DB
     for item in db.get_blacklist("domain"):
         rules.append({
             "type": "field",
@@ -95,6 +94,7 @@ def _build_inbounds():
     network = db.get_setting("xray_network") or "xhttp"
     security = db.get_setting("xray_security") or "none"
     mode = db.get_setting("xray_mode") or "packet-up"
+    sniffing = db.get_setting("sniffing_enabled") == "1"
 
     for user in db.get_enabled_users():
         inbound = {
@@ -124,7 +124,7 @@ def _build_inbounds():
                 }
             },
             "sniffing": {
-                "enabled": db.get_setting("sniffing_enabled") == "1",
+                "enabled": sniffing,
                 "destOverride": ["http", "tls", "quic"],
                 "routeOnly": False
             }
@@ -155,7 +155,6 @@ def _build_outbounds(chain_proxy=""):
         }
     ]
     if chain_proxy:
-        # Parse chain proxy: protocol://host:port
         proxy_tag = "chain-proxy"
         proxy_user, proxy_pass = "", ""
         if "://" in chain_proxy:
@@ -213,7 +212,6 @@ def generate_config():
     chain_proxy = db.get_setting("chain_proxy")
     if chain_proxy:
         config["outbounds"] = _build_outbounds(chain_proxy)
-        # Add chain proxy outbound
         config["outbounds"].append({
             "tag": "chain",
             "protocol": "freedom",
@@ -269,26 +267,20 @@ def get_link_info(config=None):
             with open(CONFIG_PATH) as f:
                 config = json.load(f)
         except:
-            return None, None
+            return None
     if not config.get("inbounds"):
-        return None, None
+        return None
     inbound = config["inbounds"][0]
-    settings = inbound.get("settings", {})
-    clients = settings.get("clients", [])
-    if not clients:
-        return None, None
-    client = clients[0]
-    uuid = client.get("id", "")
+    port = inbound.get("port", 443)
     network = inbound.get("streamSettings", {}).get("network", "xhttp")
+    mode = inbound.get("streamSettings", {}).get("xhttpSettings", {}).get("mode", "packet-up")
     sni = os.environ.get("CODESPACE_NAME", "codespace")
     return {
-        "uuid": uuid,
-        "sni": f"{snI}-443.app.github.dev",
-        "host": f"{snI}-443.app.github.dev",
-        "port": inbound.get("port", 443),
+        "port": port,
         "network": network,
-        "mode": inbound.get("streamSettings", {}).get("xhttpSettings", {}).get("mode", "packet-up"),
-        "security": inbound.get("streamSettings", {}).get("security", "none")
+        "mode": mode,
+        "sni": f"{sni}-443.app.github.dev",
+        "host": f"{sni}-443.app.github.dev"
     }
 
 def get_all_links():
@@ -309,3 +301,34 @@ def get_all_links():
                         f"&type={info['network']}&mode={info['mode']}&path=%2F#{email}")
                 links.append({"email": email, "uuid": uuid, "link": link})
     return links
+
+def get_traffic_stats():
+    try:
+        result = subprocess.run([XRAY_BIN, "api", "--stats"], capture_output=True, text=True, timeout=5)
+        if result.returncode != 0:
+            return {}
+        lines = result.stdout.strip().split("\n")
+        stats = {}
+        for line in lines:
+            parts = line.split(" ")
+            if len(parts) >= 3 and parts[0].startswith("User"):
+                email = parts[0].split(":")[1] if ":" in parts[0] else parts[0]
+                up = int(parts[1]) if parts[1] != "-" else 0
+                down = int(parts[2]) if parts[2] != "-" else 0
+                stats[email] = {"up": up, "down": down, "total": up + down}
+        return stats
+    except Exception:
+        return {}
+
+def get_online_count():
+    return len(db.get_online_users())
+
+def get_system_stats():
+    import psutil
+    stats = {}
+    stats["cpu"] = psutil.cpu_percent(interval=1)
+    stats["memory"] = psutil.virtual_memory().percent
+    stats["disk"] = psutil.disk_usage("/").percent
+    stats["network_sent"] = psutil.net_io_counters().bytes_sent
+    stats["network_recv"] = psutil.net_io_counters().bytes_recv
+    return stats

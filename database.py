@@ -57,9 +57,32 @@ def init_db():
         details TEXT,
         timestamp REAL DEFAULT 0
     )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS traffic_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        uuid TEXT,
+        email TEXT,
+        data_used_mb REAL DEFAULT 0,
+        total_connects INTEGER DEFAULT 0,
+        logged_at REAL DEFAULT 0
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS online_users (
+        uuid TEXT PRIMARY KEY,
+        connected_at REAL DEFAULT 0,
+        bytes_up REAL DEFAULT 0,
+        bytes_down REAL DEFAULT 0
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tg_id INTEGER,
+        user_email TEXT,
+        message TEXT,
+        read INTEGER DEFAULT 0,
+        created_at REAL DEFAULT 0
+    )""")
     c.execute("""CREATE INDEX IF NOT EXISTS idx_connections_uuid ON connections(uuid)""")
     c.execute("""CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(timestamp)""")
-    # Set default settings
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_traffic_email ON traffic_log(email)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_notifications_tg ON notifications(tg_id)""")
     defaults = {
         "chain_outbound_tag": "chain",
         "chain_proxy": "",
@@ -285,7 +308,93 @@ def get_admin_tg_ids():
         return []
     return [int(x.strip()) for x in val.split(",") if x.strip()]
 
-# --- Email-based helpers (used by bot.py) ---
+def log_traffic(uuid, email, data_used_mb, total_connects):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("INSERT INTO traffic_log (uuid, email, data_used_mb, total_connects, logged_at) VALUES (?, ?, ?, ?, ?)",
+              (uuid, email, data_used_mb, total_connects, time.time()))
+    conn.commit()
+    conn.close()
+
+def get_traffic_history(email, limit=30):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""SELECT data_used_mb, total_connects, logged_at FROM traffic_log
+                 WHERE email = ? ORDER BY logged_at DESC LIMIT ?""",
+              (email, limit))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_traffic_summary(days=30):
+    conn = get_conn()
+    c = conn.cursor()
+    cutoff = time.time() - (days * 86400)
+    c.execute("""SELECT email, SUM(data_used_mb) as total_used,
+                      COUNT(*) as snapshots FROM traffic_log
+                 WHERE logged_at >= ? GROUP BY email ORDER BY total_used DESC""",
+              (cutoff,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def set_online(uuid):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO online_users (uuid, connected_at) VALUES (?, ?)",
+              (uuid, time.time()))
+    conn.commit()
+    conn.close()
+
+def set_offline(uuid):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("DELETE FROM online_users WHERE uuid = ?", (uuid,))
+    conn.commit()
+    conn.close()
+
+def get_online_users():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("""SELECT ou.uuid, u.email, ou.connected_at,
+                      (ou.bytes_up + ou.bytes_down) as total_bytes
+                 FROM online_users ou
+                 JOIN users u ON ou.uuid = u.uuid""")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def notify_user(tg_id, user_email, message):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("INSERT INTO notifications (tg_id, user_email, message, created_at) VALUES (?, ?, ?, ?)",
+              (tg_id, user_email, message, time.time()))
+    conn.commit()
+    conn.close()
+
+def get_unread_notifications(tg_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT * FROM notifications WHERE tg_id = ? AND read = 0 ORDER BY created_at DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def mark_notification_read(tg_id, n_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("UPDATE notifications SET read = 1 WHERE id = ? AND tg_id = ?", (n_id, tg_id))
+    conn.commit()
+    conn.close()
+
+def get_users_by_search(query):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE email LIKE ? ORDER BY created_at DESC",
+              (f"%{query}%",))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 def get_user_by_email(email):
     conn = get_conn()
