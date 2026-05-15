@@ -61,6 +61,6 @@ fi
 echo "[monitor] Refreshing Codespace services..."
 gh codespace ports visibility 443:public -c "$codespace_name" || true
 gh codespace ssh -c "$codespace_name" -- \
-  bash -lc "if [ -x /usr/local/bin/start.sh ]; then /usr/local/bin/start.sh; elif [ -x /workspaces/$REPO_NAME/.devcontainer/start.sh ]; then /workspaces/$REPO_NAME/.devcontainer/start.sh; else bash /workspaces/$REPO_NAME/.devcontainer/start.sh; fi"
+  bash -lc "if [ -x /workspaces/$REPO_NAME/.devcontainer/monitor-start.sh ]; then /workspaces/$REPO_NAME/.devcontainer/monitor-start.sh; elif [ -x /usr/local/bin/start.sh ]; then /usr/local/bin/start.sh; else bash /workspaces/$REPO_NAME/.devcontainer/start.sh; fi"
 
 echo "[monitor] Codespace refresh completed."
