@@ -1,8 +1,8 @@
 {
-  "name": "AVENGED",
+  "name": "BUUGEREYDY",
   "build": {
     "dockerfile": "Dockerfile",
-    "context": "."
+    "context": ".."
   },
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
@@ -15,7 +15,7 @@
   "postAttachCommand": "gh codespace ports visibility 443:public -c $CODESPACE_NAME && bash /usr/local/bin/start.sh",
   "portsAttributes": {
     "443": {
-      "label": "AVENGED",
+      "label": "BUUGEREYDY",
       "protocol": "http",
       "onAutoForward": "silent"
     }
