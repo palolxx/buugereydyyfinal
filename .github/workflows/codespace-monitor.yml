@@ -1,0 +1,26 @@
+name: Codespace monitor
+
+on:
+  schedule:
+    # GitHub Actions schedule granularity is best-effort; this requests an 8-minute monitor cadence.
+    - cron: '*/8 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: codespace-monitor
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh Codespace and services
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Refresh Codespace and start missing scripts
+        env:
+          GH_CODESPACES_TOKEN: ${{ secrets.GH_CODESPACES_TOKEN }}
+          CODESPACE_NAME: ${{ vars.CODESPACE_NAME }}
+        run: .github/scripts/monitor-codespace.sh
