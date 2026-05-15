@@ -1,9 +1,9 @@
 FROM debian:bookworm-slim
 
-COPY .devcontainer/setup.sh /tmp/setup.sh
-COPY .devcontainer/config.json /etc/xray/g2ray.json
-COPY .devcontainer/show-link.sh /usr/local/bin/show-link.sh
-COPY .devcontainer/start.sh /usr/local/bin/start.sh
+COPY setup.sh /tmp/setup.sh
+COPY config.json /etc/xray/g2ray.json
+COPY show-link.sh /usr/local/bin/show-link.sh
+COPY start.sh /usr/local/bin/start.sh
 COPY bot.py /root/buugereydyfinal/bot.py
 COPY xray_manager.py /root/buugereydyfinal/xray_manager.py
 COPY database.py /root/buugereydyfinal/database.py
