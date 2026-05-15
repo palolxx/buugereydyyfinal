@@ -603,21 +603,25 @@ async def callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if data == "route_bt":
-        db.set_setting("bittorrent_block", "0")
+        cur = db.get_setting("bittorrent_block")
+        db.set_setting("bittorrent_block", "0" if cur == "1" else "1")
         xray.reload_xray()
-        await msg.edit_text("BT block OFF")
+        await msg.edit_text(f"BT block {'ON' if db.get_setting('bittorrent_block')=='1' else 'OFF'}")
     elif data == "route_ads":
-        db.set_setting("ads_block", "0")
+        cur = db.get_setting("ads_block")
+        db.set_setting("ads_block", "0" if cur == "1" else "1")
         xray.reload_xray()
-        await msg.edit_text("Ads block OFF")
+        await msg.edit_text(f"Ads block {'ON' if db.get_setting('ads_block')=='1' else 'OFF'}")
     elif data == "route_priv":
-        db.set_setting("private_ip_block", "0")
+        cur = db.get_setting("private_ip_block")
+        db.set_setting("private_ip_block", "0" if cur == "1" else "1")
         xray.reload_xray()
-        await msg.edit_text("Private IP block OFF")
+        await msg.edit_text(f"Private IP block {'ON' if db.get_setting('private_ip_block')=='1' else 'OFF'}")
     elif data == "route_sniff":
-        db.set_setting("sniffing_enabled", "0")
+        cur = db.get_setting("sniffing_enabled")
+        db.set_setting("sniffing_enabled", "0" if cur == "1" else "1")
         xray.reload_xray()
-        await msg.edit_text("Sniffing OFF")
+        await msg.edit_text(f"Sniffing {'ON' if db.get_setting('sniffing_enabled')=='1' else 'OFF'}")
 
     # --- Server Settings ---
     if data == "set_server":
