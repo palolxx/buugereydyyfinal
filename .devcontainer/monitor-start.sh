@@ -95,25 +95,6 @@ is_bot_running() {
   pgrep -f "[p]ython3[[:space:]]+.*bot\.py" >/dev/null 2>&1
 }
 
-publish_codespace_port_if_possible() {
-  if [ -n "${CODESPACE_NAME:-}" ] && command -v gh >/dev/null 2>&1; then
-    echo "[monitor] Making Codespace port 443 public..."
-    gh codespace ports visibility 443:public -c "$CODESPACE_NAME" || true
-  fi
-}
-
-run_workflow_if_requested() {
-  if [ "${RUN_CODESPACE_MONITOR_WORKFLOW:-0}" != "1" ]; then
-    return 0
-  fi
-  if ! command -v gh >/dev/null 2>&1; then
-    echo "[monitor] gh is not installed; skipping workflow dispatch."
-    return 0
-  fi
-  echo "[monitor] Dispatching Codespace monitor workflow..."
-  gh workflow run codespace-monitor.yml || true
-}
-
 start_xray_if_needed() {
   ensure_session "$XRAY_SESSION" "$XRAY_WINDOW"
   if is_xray_running; then
@@ -160,11 +141,9 @@ start_bot_if_needed() {
   fi
 }
 
-publish_codespace_port_if_possible
 start_xray_if_needed
 start_keepalive_if_needed
 start_bot_if_needed
-run_workflow_if_requested
 
 if [ "$HAS_TMUX" -eq 1 ]; then
   echo "[monitor] Sessions checked: $XRAY_SESSION ($XRAY_WINDOW/$KEEPALIVE_WINDOW), $BOT_SESSION ($BOT_WINDOW)."
