@@ -7,7 +7,7 @@ from pathlib import Path
 import database as db
 
 CONFIG_PATH = Path("/etc/xray/g2ray.json")
-XRAY_BIN = "/tmp/xray"
+XRAY_BIN = "/usr/local/bin/xray"
 GEOIP_PATH = Path("/usr/local/bin/geoip.dat")
 GEOSITE_PATH = Path("/usr/local/bin/geosite.dat")
 
