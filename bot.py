@@ -1698,14 +1698,12 @@ def main():
         print("[buugereydy] Starting Xray...")
         xray.start_xray()
 
+    import threading
+    threading.Thread(target=lambda: asyncio.run(keepalive_loop()), daemon=True).start()
+    threading.Thread(target=lambda: asyncio.run(codespace_checker(app)), daemon=True).start()
+
     print("[buugereydy] Polling...")
-    app.run_polling(
-        drop_pending_updates=True,
-        start_updater_hook=lambda: asyncio.gather(
-            keepalive_loop(),
-            codespace_checker(app),
-        ),
-    )
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
