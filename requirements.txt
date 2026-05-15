@@ -1,0 +1,6 @@
+python-telegram-bot==21.7
+aiohttp==3.9.5
+Pillow==10.4.0
+qrcode==7.4.2
+psutil==6.0.0
+chardet==5.2.0
