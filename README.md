@@ -48,9 +48,11 @@ Full Telegram management system for Xray (V2Ray) servers running on GitHub Codes
 - Sniffing toggle
 - Add admin users
 
-### Codespace Keepalive
-- Automatic ping every 10 minutes to prevent 4-hour timeout
-- Xray keepalive via tmux session
+### Codespace Monitoring
+- GitHub Actions workflow checks the Codespace every 8 minutes (`.github/workflows/codespace-monitor.yml`)
+- Starts the Codespace if it is not already available
+- Re-runs the idempotent startup script so Xray, the Telegram bot, and the keepalive loop are started only when missing
+- Keeps port 443 public for the VLESS/Xray endpoint
 
 ## Telegram Commands
 
@@ -68,7 +70,9 @@ Full Telegram management system for Xray (V2Ray) servers running on GitHub Codes
 - `database.py` - SQLite database
 - `requirements.txt` - Python dependencies
 - `.devcontainer/Dockerfile` - Container image
-- `.devcontainer/start.sh` - Startup script
+- `.devcontainer/start.sh` - Idempotent startup/monitor script for Xray, bot, and keepalive
+- `.github/workflows/codespace-monitor.yml` - Scheduled GitHub Actions monitor
+- `.github/scripts/monitor-codespace.sh` - Codespace refresh helper used by the workflow
 - `.devcontainer/config.json` - Xray config (original format)
 
 ## Config Format
@@ -86,3 +90,16 @@ The Xray config format is preserved exactly:
 2. Open in GitHub Codespace
 3. Codespace automatically builds Docker image and starts Xray + Bot
 4. Bot becomes available on Telegram
+
+## GitHub Actions Codespace Monitor
+
+The repository includes a scheduled workflow that requests an 8-minute monitoring cadence. GitHub Actions schedules are best-effort, so exact start times can be delayed by GitHub.
+
+To enable it:
+
+1. Create a GitHub personal access token with permission to manage Codespaces.
+2. Add it to the repository as the secret `GH_CODESPACES_TOKEN`.
+3. Optional: add a repository variable named `CODESPACE_NAME` if you want to monitor a specific Codespace. If omitted, the workflow selects the first Codespace it finds for this repository.
+4. Run **Codespace monitor** manually once from the Actions tab, then let the schedule continue.
+
+On each run, the workflow starts the Codespace if necessary, makes port 443 public, and executes the startup script. The startup script is safe to run repeatedly: it checks whether Xray, the Telegram bot, and keepalive tmux window already exist before starting anything.
