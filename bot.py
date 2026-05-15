@@ -229,19 +229,48 @@ async def callback_add_user_limit_preset(update, context):
     await query.answer()
     mb = int(query.data.split(":")[1])
     context.user_data["_au_limit"] = mb
-    await query.message.edit_text(f"Limit: {fmt_mb(mb)}\n\nSet expiry:")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("1 Day", callback_data="au_ep:1d"),
+         InlineKeyboardButton("3 Days", callback_data="au_ep:3d")],
+        [InlineKeyboardButton("1 Week", callback_data="au_ep:1w"),
+         InlineKeyboardButton("2 Weeks", callback_data="au_ep:2w")],
+        [InlineKeyboardButton("1 Month", callback_data="au_ep:1m"),
+         InlineKeyboardButton("3 Months", callback_data="au_ep:3m")],
+        [InlineKeyboardButton("6 Months", callback_data="au_ep:6m"),
+         InlineKeyboardButton("1 Year", callback_data="au_ep:1y")],
+        [InlineKeyboardButton("Custom", callback_data="au_ec")],
+        [InlineKeyboardButton("None", callback_data="au_en")],
+        [InlineKeyboardButton("Back", callback_data="add_user")],
+    ])
+    await query.message.edit_text(f"Limit: {fmt_mb(mb)}\n\nSelect expiry:", reply_markup=kb)
 
 async def callback_add_user_limit_custom(update, context):
     query = update.callback_query
     await query.answer()
     context.user_data["_au_step"] = "au_lc"
-    await query.message.edit_text("Enter custom limit in MB:")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Back", callback_data="add_user")],
+    ])
+    await query.message.edit_text("Enter custom limit in MB:", reply_markup=kb)
 
 async def callback_add_user_limit_none(update, context):
     query = update.callback_query
     await query.answer()
     context.user_data["_au_limit"] = 0
-    await query.message.edit_text("Unlimited.\n\nSet expiry:")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("1 Day", callback_data="au_ep:1d"),
+         InlineKeyboardButton("3 Days", callback_data="au_ep:3d")],
+        [InlineKeyboardButton("1 Week", callback_data="au_ep:1w"),
+         InlineKeyboardButton("2 Weeks", callback_data="au_ep:2w")],
+        [InlineKeyboardButton("1 Month", callback_data="au_ep:1m"),
+         InlineKeyboardButton("3 Months", callback_data="au_ep:3m")],
+        [InlineKeyboardButton("6 Months", callback_data="au_ep:6m"),
+         InlineKeyboardButton("1 Year", callback_data="au_ep:1y")],
+        [InlineKeyboardButton("Custom", callback_data="au_ec")],
+        [InlineKeyboardButton("None", callback_data="au_en")],
+        [InlineKeyboardButton("Back", callback_data="add_user")],
+    ])
+    await query.message.edit_text("Unlimited.\n\nSelect expiry:", reply_markup=kb)
 
 async def callback_add_user_expiry(update, context):
     query = update.callback_query
@@ -266,19 +295,32 @@ async def callback_add_user_expiry_preset(update, context):
     await query.answer()
     dur = query.data.split(":")[1]
     context.user_data["_au_expiry"] = calculate_expiry(dur)
-    await query.message.edit_text(f"Expiry: {context.user_data['_au_expiry']}\nSet chain or tap Done.")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Chain Proxy", callback_data="au_chain")],
+        [InlineKeyboardButton("Done & Create", callback_data="au_done")],
+        [InlineKeyboardButton("Back", callback_data="add_user")],
+    ])
+    await query.message.edit_text(f"Expiry: {context.user_data['_au_expiry']}\n\nSet chain or tap Done:", reply_markup=kb)
 
 async def callback_add_user_expiry_custom(update, context):
     query = update.callback_query
     await query.answer()
     context.user_data["_au_step"] = "au_ec"
-    await query.message.edit_text("Enter date (YYYY-MM-DD):")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Back", callback_data="add_user")],
+    ])
+    await query.message.edit_text("Enter date (YYYY-MM-DD):", reply_markup=kb)
 
 async def callback_add_user_expiry_none(update, context):
     query = update.callback_query
     await query.answer()
     context.user_data["_au_expiry"] = None
-    await query.message.edit_text("No expiry.\nSet chain or tap Done.")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Chain Proxy", callback_data="au_chain")],
+        [InlineKeyboardButton("Done & Create", callback_data="au_done")],
+        [InlineKeyboardButton("Back", callback_data="add_user")],
+    ])
+    await query.message.edit_text("No expiry.\n\nSet chain or tap Done:", reply_markup=kb)
 
 async def callback_add_user_chain(update, context):
     query = update.callback_query
@@ -1231,16 +1273,32 @@ async def handle_text(update, context):
         try:
             mb = int(text)
             context.user_data["_au_limit"] = mb
-            context.user_data["_au_step"] = "expiry"
-            await update.message.reply_text(f"Limit: {fmt_mb(mb)}\n\nSet expiry:")
+            kb = InlineKeyboardMarkup([
+                [InlineKeyboardButton("1 Day", callback_data="au_ep:1d"),
+                 InlineKeyboardButton("3 Days", callback_data="au_ep:3d")],
+                [InlineKeyboardButton("1 Week", callback_data="au_ep:1w"),
+                 InlineKeyboardButton("2 Weeks", callback_data="au_ep:2w")],
+                [InlineKeyboardButton("1 Month", callback_data="au_ep:1m"),
+                 InlineKeyboardButton("3 Months", callback_data="au_ep:3m")],
+                [InlineKeyboardButton("6 Months", callback_data="au_ep:6m"),
+                 InlineKeyboardButton("1 Year", callback_data="au_ep:1y")],
+                [InlineKeyboardButton("Custom", callback_data="au_ec")],
+                [InlineKeyboardButton("None", callback_data="au_en")],
+                [InlineKeyboardButton("Back", callback_data="add_user")],
+            ])
+            await update.message.reply_text(f"Limit: {fmt_mb(mb)}\n\nSelect expiry:", reply_markup=kb)
         except ValueError:
             await update.message.reply_text("Valid number in MB:")
         return
 
     if step == "au_ec":
         context.user_data["_au_expiry"] = text
-        context.user_data["_au_step"] = "chain"
-        await update.message.reply_text(f"Expiry: {text}\n\nSet chain proxy (or leave empty):")
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("Chain Proxy", callback_data="au_chain")],
+            [InlineKeyboardButton("Done & Create", callback_data="au_done")],
+            [InlineKeyboardButton("Back", callback_data="add_user")],
+        ])
+        await update.message.reply_text(f"Expiry: {text}\n\nSet chain or tap Done:", reply_markup=kb)
         return
 
     if step == "chain":
@@ -1254,12 +1312,16 @@ async def handle_text(update, context):
         xray.reload_xray()
         link = config_link(email, new_uuid)
         await update.message.reply_text(
-            f"Created: {email}\n"
+            f"User created: {email}\n\n"
             f"UUID: {new_uuid}\n"
             f"Limit: {fmt_mb(limit)}\n"
             f"Expiry: {expiry or 'Never'}\n"
-            f"Chain: {chain}\n\n"
-            f"Link: {link[:100]}...")
+            f"Chain: {chain or 'None'}\n\n"
+            f"Link: {link[:120]}...",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("All Users", callback_data="all_users"),
+                InlineKeyboardButton("Main Menu", callback_data="back")
+            ]]))
         context.user_data.clear()
         return
 
