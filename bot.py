@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 import database as db
 import xray_manager as xray
 
-TOKEN = "8709950346:AAFTsalOIaTnp9IxMb31gPWsedRTwpSdtpE"
+TOKEN = "8952649145:AAHEpUYHXkiaOzaVXhagMwvuqs8b9-rvQQY"
 
 def fmt_bytes(b):
     if b < 1024: return f"{b} B"
